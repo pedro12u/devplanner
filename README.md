@@ -53,7 +53,6 @@ src/
 ## Estrutura de Dados
 
 ### profiles
-Tabela: profiles
 ```typescript
 {
   id: uuid (PK, FK -> auth.users)
@@ -61,7 +60,7 @@ Tabela: profiles
   created_at: timestamp
 }
 ```
-Tabela: projects
+###  projects
 ```typescript
 {
   id: uuid (PK)
@@ -72,7 +71,7 @@ Tabela: projects
   updated_at: timestamp
 }
 ```
-Tabela: tasks
+###  tasks
 ```typescript
 {
   id: uuid (PK)
@@ -112,9 +111,9 @@ npm run dev
 Acesse em http://localhost:5173
 
 Equipe
-Pedro Toscano — R.A: 25362292-2
-Lucas de Freitas Bovo — R.A: 25362304-2
-Gabriel Felipe Alexandre dos Santos — R.A: 25362250-2
+- Pedro Toscano — R.A: 25362292-2
+- Lucas de Freitas Bovo — R.A: 25362304-2
+- Gabriel Felipe Alexandre dos Santos — R.A: 25362250-2
 
 Dev Planner — Organize seus projetos, visualize seu progresso e entregue com mais foco. 
 ---
