@@ -62,6 +62,11 @@ export interface Database {
           title: string
           description: string
           status: string
+          priority: string
+          tags: Json
+          category: string
+          color: string | null
+          order_index: number
           created_at: string
           updated_at: string
         }
@@ -71,6 +76,11 @@ export interface Database {
           title: string
           description?: string
           status?: string
+          priority?: string
+          tags?: Json
+          category?: string
+          color?: string | null
+          order_index?: number
           created_at?: string
           updated_at?: string
         }
@@ -80,6 +90,11 @@ export interface Database {
           title?: string
           description?: string
           status?: string
+          priority?: string
+          tags?: Json
+          category?: string
+          color?: string | null
+          order_index?: number
           created_at?: string
           updated_at?: string
         }

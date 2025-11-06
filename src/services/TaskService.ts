@@ -6,6 +6,11 @@ export interface Task {
   title: string;
   description: string;
   status: string;
+  priority: string;
+  tags: string[];
+  category: string;
+  color: string | null;
+  order_index: number;
   created_at: string;
   updated_at: string;
 }
@@ -15,6 +20,10 @@ export interface CreateTaskData {
   title: string;
   description?: string;
   status?: string;
+  priority?: string;
+  tags?: string[];
+  category?: string;
+  color?: string | null;
 }
 
 export class TaskService {
@@ -23,6 +32,7 @@ export class TaskService {
       .from('tasks')
       .select('*')
       .eq('project_id', projectId)
+      .order('order_index', { ascending: true })
       .order('created_at', { ascending: true });
 
     if (error) throw new Error(error.message);
@@ -38,6 +48,10 @@ export class TaskService {
         title: taskData.title,
         description: taskData.description || '',
         status: taskData.status || 'A Fazer',
+        priority: taskData.priority || 'media',
+        tags: taskData.tags || [],
+        category: taskData.category || 'geral',
+        color: taskData.color || null,
       })
       .select()
       .single();
@@ -89,5 +103,16 @@ export class TaskService {
       .eq('id', taskId);
 
     if (error) throw new Error(error.message);
+  }
+
+  static async reorderTasks(tasks: { id: string; order_index: number }[]): Promise<void> {
+    const updates = tasks.map(task =>
+      supabase
+        .from('tasks')
+        .update({ order_index: task.order_index })
+        .eq('id', task.id)
+    );
+
+    await Promise.all(updates);
   }
 }

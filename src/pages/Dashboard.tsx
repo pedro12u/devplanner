@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Plus, FolderOpen, Trash2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { ProjectService, Project } from '../services/ProjectService';
@@ -7,6 +7,8 @@ import Navbar from '../components/Navbar';
 import KanbanBoard from '../components/KanbanBoard';
 import ModalCreateProject from '../components/ModalCreateProject';
 import ModalCreateTask from '../components/ModalCreateTask';
+import TaskFilters from '../components/TaskFilters';
+import TaskStatistics from '../components/TaskStatistics';
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -17,6 +19,11 @@ export default function Dashboard() {
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [filters, setFilters] = useState<{
+    priority: string[];
+    tags: string[];
+    category: string;
+  }>({ priority: [], tags: [], category: '' });
 
   useEffect(() => {
     loadProjects();
@@ -88,7 +95,15 @@ export default function Dashboard() {
     }
   };
 
-  const handleCreateTask = async (data: { title: string; description: string; status: string }) => {
+  const handleCreateTask = async (data: {
+    title: string;
+    description: string;
+    status: string;
+    priority: string;
+    tags: string[];
+    category: string;
+    color: string | null;
+  }) => {
     if (!selectedProject) return;
 
     try {
@@ -119,14 +134,53 @@ export default function Dashboard() {
     setEditingTask(null);
   };
 
+  const filteredTasks = useMemo(() => {
+    return tasks.filter(task => {
+      if (filters.priority.length > 0 && !filters.priority.includes(task.priority)) {
+        return false;
+      }
+
+      if (filters.tags.length > 0) {
+        const taskTags = task.tags as string[];
+        const hasMatchingTag = filters.tags.some(filterTag => taskTags.includes(filterTag));
+        if (!hasMatchingTag) return false;
+      }
+
+      if (filters.category && task.category !== filters.category) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [tasks, filters]);
+
+  const availableTags = useMemo(() => {
+    const tagsSet = new Set<string>();
+    tasks.forEach(task => {
+      const taskTags = task.tags as string[];
+      taskTags.forEach(tag => tagsSet.add(tag));
+    });
+    return Array.from(tagsSet);
+  }, [tasks]);
+
+  const availableCategories = useMemo(() => {
+    const categoriesSet = new Set<string>();
+    tasks.forEach(task => {
+      if (task.category && task.category !== 'geral') {
+        categoriesSet.add(task.category);
+      }
+    });
+    return Array.from(categoriesSet);
+  }, [tasks]);
+
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         <Navbar />
         <div className="flex items-center justify-center h-[calc(100vh-64px)]">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-4 text-gray-600">Carregando...</p>
+            <p className="mt-4 text-gray-600 dark:text-gray-400">Carregando...</p>
           </div>
         </div>
       </div>
@@ -134,13 +188,13 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
       <Navbar />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-2xl font-bold text-gray-800">Meus Projetos</h2>
+            <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Meus Projetos</h2>
             <button
               onClick={() => setIsProjectModalOpen(true)}
               className="flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition font-medium"
@@ -155,10 +209,10 @@ export default function Dashboard() {
               {projects.map(project => (
                 <div
                   key={project.id}
-                  className={`bg-white rounded-lg border-2 p-4 cursor-pointer transition group ${
+                  className={`bg-white dark:bg-gray-800 rounded-lg border-2 p-4 cursor-pointer transition group ${
                     selectedProject?.id === project.id
                       ? 'border-blue-500 shadow-md'
-                      : 'border-gray-200 hover:border-gray-300'
+                      : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
                   }`}
                   onClick={() => setSelectedProject(project)}
                 >
@@ -166,13 +220,13 @@ export default function Dashboard() {
                     <div className="flex items-start space-x-3 flex-1">
                       <FolderOpen
                         className={`w-5 h-5 flex-shrink-0 mt-0.5 ${
-                          selectedProject?.id === project.id ? 'text-blue-600' : 'text-gray-400'
+                          selectedProject?.id === project.id ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400 dark:text-gray-500'
                         }`}
                       />
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-gray-800 truncate">{project.title}</h3>
+                        <h3 className="font-semibold text-gray-800 dark:text-gray-100 truncate">{project.title}</h3>
                         {project.description && (
-                          <p className="text-sm text-gray-600 mt-1 line-clamp-2">
+                          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 line-clamp-2">
                             {project.description}
                           </p>
                         )}
@@ -183,7 +237,7 @@ export default function Dashboard() {
                         e.stopPropagation();
                         handleDeleteProject(project.id);
                       }}
-                      className="opacity-0 group-hover:opacity-100 p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition"
+                      className="opacity-0 group-hover:opacity-100 p-1.5 text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition"
                       title="Excluir projeto"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -193,12 +247,12 @@ export default function Dashboard() {
               ))}
             </div>
           ) : (
-            <div className="bg-white rounded-lg border-2 border-dashed border-gray-300 p-12 text-center">
-              <FolderOpen className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-800 mb-2">
+            <div className="bg-white dark:bg-gray-800 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 p-12 text-center">
+              <FolderOpen className="w-16 h-16 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-2">
                 Nenhum projeto encontrado
               </h3>
-              <p className="text-gray-600 mb-6">
+              <p className="text-gray-600 dark:text-gray-400 mb-6">
                 Crie seu primeiro projeto para começar a organizar suas tarefas
               </p>
               <button
@@ -214,28 +268,42 @@ export default function Dashboard() {
 
         {selectedProject && (
           <div>
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h2 className="text-2xl font-bold text-gray-800">{selectedProject.title}</h2>
+            <div className="flex items-start justify-between mb-6 gap-6">
+              <div className="flex-1">
+                <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">{selectedProject.title}</h2>
                 {selectedProject.description && (
-                  <p className="text-gray-600 mt-1">{selectedProject.description}</p>
+                  <p className="text-gray-600 dark:text-gray-400 mt-1">{selectedProject.description}</p>
                 )}
               </div>
-              <button
-                onClick={() => setIsTaskModalOpen(true)}
-                className="flex items-center space-x-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition font-medium"
-              >
-                <Plus className="w-5 h-5" />
-                <span>Nova Tarefa</span>
-              </button>
+              <div className="flex items-center gap-3">
+                <TaskFilters
+                  onFilterChange={setFilters}
+                  availableTags={availableTags}
+                  availableCategories={availableCategories}
+                />
+                <button
+                  onClick={() => setIsTaskModalOpen(true)}
+                  className="flex items-center space-x-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition font-medium"
+                >
+                  <Plus className="w-5 h-5" />
+                  <span>Nova Tarefa</span>
+                </button>
+              </div>
             </div>
 
-            <KanbanBoard
-              tasks={tasks}
-              columns={selectedProject.columns}
-              onTaskUpdate={() => loadTasks(selectedProject.id)}
-              onEditTask={handleEditTask}
-            />
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+              <div className="lg:col-span-3">
+                <KanbanBoard
+                  tasks={filteredTasks}
+                  columns={selectedProject.columns}
+                  onTaskUpdate={() => loadTasks(selectedProject.id)}
+                  onEditTask={handleEditTask}
+                />
+              </div>
+              <div className="lg:col-span-1">
+                <TaskStatistics tasks={tasks} columns={selectedProject.columns} />
+              </div>
+            </div>
           </div>
         )}
       </div>
